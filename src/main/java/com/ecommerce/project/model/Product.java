@@ -3,16 +3,16 @@ package com.ecommerce.project.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.Objects;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "products")
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -36,6 +36,9 @@ public class Product {
     @JoinColumn(name = "category_id")
 
     private Category category;
+    @ManyToOne
+    @JoinColumn(name = "seller_id")
+    private User user;
 
     @Override
     public int hashCode() {
