@@ -8,12 +8,13 @@ import com.ecommerce.project.security.request.LoginRequest;
 import com.ecommerce.project.security.request.SignUpRequest;
 import com.ecommerce.project.security.response.MessageResponse;
 import com.ecommerce.project.security.response.UserInforResponse;
-import com.ecommerce.project.security.services.UserDetailImpl;
+import com.ecommerce.project.security.services.UserDetailsImpl;
 import com.ecommerce.project.security.services.UserDetailsServiceImpl;
 import com.ecommerce.project.services.RoleServices;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -60,19 +61,30 @@ public class AuthController {
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        UserDetailImpl userDetail = (UserDetailImpl) authentication.getPrincipal();
-        String jwtToken = jwtUtils.generateTokenFromUsername(userDetail);
+        UserDetailsImpl userDetail = (UserDetailsImpl) authentication.getPrincipal();
+        //  String jwtToken = jwtUtils.generateTokenFromUsername(userDetail.getUsername());
+
+        // let's get the Cookie from user
+        ResponseCookie cookie = jwtUtils.generateJwtCookie(userDetail);
+
         List<String> roles = userDetail.getAuthorities()
                 .stream().map(GrantedAuthority::getAuthority).toList();
-        UserInforResponse userInforResponse = new UserInforResponse(userDetail.getId(), jwtToken, userDetail.getUsername(), roles);
+        UserInforResponse userInforResponse =
+                new UserInforResponse(
+                        userDetail.getId(),
+                        userDetail.getUsername(),
+                        roles);
 
-        return new ResponseEntity<>(userInforResponse, HttpStatus.OK);
+        // return new ResponseEntity<>(userInforResponse, HttpStatus.OK);
+        return ResponseEntity
+                .ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(userInforResponse);
     }
 
 
-
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser( @RequestBody SignUpRequest signUpRequest) {
+    public ResponseEntity<?> registerUser(@RequestBody SignUpRequest signUpRequest) {
 
         System.out.println("Register new User");
         if (userDetailsService.existsByUserName(signUpRequest.getUsername())) {
@@ -118,20 +130,41 @@ public class AuthController {
 
     @PostMapping("/signout")
     public ResponseEntity<?> signOut() {
+        ResponseCookie cleanJwtCookie = jwtUtils.generateCleanJwtCookie();
 
-        return null;
+        return ResponseEntity
+                .ok()
+                .header(HttpHeaders.SET_COOKIE, cleanJwtCookie.toString())
+                .body(new MessageResponse("User logged out successfully"));
     }
 
     @GetMapping("/username")
-    public ResponseEntity<?> getCurrentUsername() {
-
-        return null;
+    public String getCurrentUsername(Authentication authentication) {
+        if (authentication != null) {
+            return authentication.getName();
+        } else {
+            return "NULL";
+        }
     }
 
     @GetMapping("/user")
-    public ResponseEntity<?> getUserInfo() {
+    public ResponseEntity<?> getUserInfo(Authentication authentication) {
 
-        return null;
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+
+        List<String> roles = userDetails.getAuthorities()
+                .stream().map(GrantedAuthority::getAuthority).toList();
+        UserInforResponse userInforResponse =
+                new UserInforResponse(
+                        userDetails.getId(),
+                        userDetails.getUsername(),
+                        roles);
+
+        // return new ResponseEntity<>(userInforResponse, HttpStatus.OK);
+        return ResponseEntity
+                .ok()
+                .body(userInforResponse);
+
     }
 
     @GetMapping("/sellers")
