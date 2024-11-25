@@ -1,32 +1,27 @@
 package com.ecommerce.project.model;
 
 import jakarta.persistence.*;
-import lombok.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.util.Objects;
-import java.util.Set;
+import java.util.List;
 
-
-@Getter
-@Setter
+@Entity(name = "categories")
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "categories")
-
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long categoryId;
 
+    @NotBlank
+    @Size(min = 5, message = "Category name must contain atleast 5 characters")
     private String categoryName;
 
-    @OneToMany(mappedBy = "category")
-    private Set<Product> products;
-
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(categoryId); // Use only the ID for hashCode
-    }
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    private List<Product> products;
 }
